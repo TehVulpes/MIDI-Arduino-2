@@ -30,3 +30,7 @@ unsigned int SerialStream::available() {
 uint8_t SerialStream::read() {
     return q->dequeue();
 }
+
+uint8_t SerialStream::peek() {
+    return q->peek();
+}

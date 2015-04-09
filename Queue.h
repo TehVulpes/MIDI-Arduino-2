@@ -40,6 +40,13 @@ public:
         return true;
     }
 
+    T peek() {
+        if (empty())
+            return 0xFF;
+
+        return this->data[front];
+    }
+
     T dequeue() {
         if (empty())
             return 0xFF;

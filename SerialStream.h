@@ -21,6 +21,7 @@ public:
     bool buffer();
     unsigned int available();
     uint8_t read();
+    uint8_t peek();
 };
 
 
