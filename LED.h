@@ -11,14 +11,13 @@
 class LED {
 private:
     unsigned int red, green, blue;
-    bool initialized = false;
     
 public:
     LED();
     LED(unsigned int red);
     LED(unsigned int red, unsigned int green, unsigned int blue);
 
-    void set(bool red, bool green, bool blue);
+    void set(bool red = true, bool green = true, bool blue = true);
     void reset();
 };
 

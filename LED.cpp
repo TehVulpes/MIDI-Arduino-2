@@ -10,6 +10,10 @@ static void set_pins(unsigned int red, unsigned int green, unsigned int blue) {
     pinMode(blue, OUTPUT);
 }
 
+LED::LED() {
+    red = green = blue = 0;
+}
+
 LED::LED(unsigned int red) {
     this->red = red;
     this->green = red + 1;
