@@ -53,6 +53,46 @@ void reset_LED() {
     leds[led]->reset();
 }
 
+void update_PIRs() {
+    for (int i = 0; i < pirs.length(); i++)
+        pirs[i]->update();
+}
+
+void check_PIR() {
+    unsigned int pir = stream.read();
+
+    bool value = pirs[pir]->check();
+
+    if (value)
+        Serial.write(1);
+    else
+        Serial.write(0);
+}
+
+void check_PIR_edge() {
+    unsigned int pir = stream.read();
+    unsigned int edge = stream.read();
+
+    bool value = edge ? pirs[pir]->check_positive_edge() : pirs[pir]->check_negative_edge();
+
+    if (value)
+        Serial.write(1);
+    else
+        Serial.write(0);
+}
+
+void get_num_LEDs() {
+    Serial.write(leds.length());
+}
+
+void get_num_PIRs() {
+    Serial.write(pirs.length());
+}
+
+inline void reset() {
+    asm("jmp 0");
+}
+
 struct {
     void (*handler)();
     unsigned int args;
@@ -61,6 +101,11 @@ struct {
         { add_PIR, 1 },     // 1
         { set_LED, 2 },     // 2
         { reset_LED, 1 },   // 3
+        { update_PIRs, 0 }, // 4
+        { check_PIR, 1 },   // 5
+        { check_PIR_edge, 2 },  // 6
+        { get_num_LEDs, 0 },//7
+        { get_num_PIRs, 0 },//8
         { 0, 0 }
 };
 unsigned int num_commands;
@@ -68,8 +113,16 @@ unsigned int num_commands;
 void reply() {
     unsigned int bytes = stream.available();
 
-    while (stream.peek() < num_commands && commands[stream.peek()].args < stream.available()) {
+    while (stream.peek() < num_commands && commands[stream.peek()].args < stream.available())
         commands[stream.read()].handler();
+
+    if (stream.available()) {
+        if(stream.peek() == 0xFF) {
+            stream.flush();
+            Serial.write(0xFF);
+        }
+        else if (stream.peek() == 0xFE)
+            reset();
     }
 }
 

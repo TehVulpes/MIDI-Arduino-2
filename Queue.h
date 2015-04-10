@@ -58,6 +58,10 @@ public:
         return data;
     }
 
+    void clear() {
+        front = back;
+    }
+
     bool full() {
         if (front > back)
             return front == back + 1;

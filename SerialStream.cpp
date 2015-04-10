@@ -34,3 +34,7 @@ uint8_t SerialStream::read() {
 uint8_t SerialStream::peek() {
     return q->peek();
 }
+
+void SerialStream::flush() {
+    q->clear();
+}

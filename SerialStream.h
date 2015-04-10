@@ -22,6 +22,7 @@ public:
     unsigned int available();
     uint8_t read();
     uint8_t peek();
+    void flush();
 };
 
 

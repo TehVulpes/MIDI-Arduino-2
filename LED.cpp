@@ -6,8 +6,11 @@
 
 static void set_pins(unsigned int red, unsigned int green, unsigned int blue) {
     pinMode(red, OUTPUT);
+    digitalWrite(red, LOW);
     pinMode(green, OUTPUT);
+    digitalWrite(blue, LOW);
     pinMode(blue, OUTPUT);
+    digitalWrite(blue, LOW);
 }
 
 LED::LED() {
