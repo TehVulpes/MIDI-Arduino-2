@@ -4,16 +4,21 @@ from rtmidi import MidiIn, MidiOut
 from _thread import start_new_thread
 
 
+mode = 0
+pir_mode_color = [False, False, True]
+
+
 open_ports = []
 LEDs = []
 PIRs = []
 
 m_out = MidiOut().open_virtual_port("Python PIR Output")
-
-midi_listen = False
 melody_in = MidiIn().open_virtual_port("Python Melody Input")
 drum_in = MidiIn().open_virtual_port("Python Drum Input")
+
 last_drum = 0
+DRUM_TIMEOUT = 0.1
+PIR_TIMEOUT = 0.7
 
 
 stair_modes = [
@@ -44,7 +49,7 @@ melody_data = [-1] * 255
 
 light_data = []
 for N in range(0, 21):
-    light_data += [[0, False, False, False, False]]
+    light_data += [[False, False, False, False]]
 
 
 def get_port(collection, n):
@@ -177,28 +182,42 @@ def drum_callback(data, useless):
         last_drum = time()
 
 
-def set_led(n, colors, timeout=0):
+def update_led(n, colors):
     data = light_data[n]
-    if data[0] != timeout or data[1] != colors[0] or data[2] != colors[1] or data[3] != colors[2]:
-        data[0] = timeout
-        data[1] = colors[0]
-        data[2] = colors[1]
-        data[3] = colors[2]
-        data[4] = True
+    if data[0] != colors[0] or data[1] != colors[1] or data[2] != colors[2]:
+        data[0] = colors[0]
+        data[1] = colors[1]
+        data[2] = colors[2]
+        data[3] = True
 
 
 def get_color(n):
     if n == -1:
         return [False, False, False]
-    return [True, True, True]
+    if n < 57:
+        return [False, False, True]
+    elif n < 63:
+        return [False, True, True]
+    elif n < 69:
+        return [False, True, True]
+    elif n < 75:
+        return [True, True, False]
+    else:
+        return [True, False, False]
 
 
-def input_runner():
+def midi_input_runner():
+    global mode
+
     temp_melody_data = []
     for n in range(0, 12):
         temp_melody_data += [-1]
 
     while True:
+        if mode is not "midi":
+            sleep(0.1)
+            continue
+
         for i in range(0, 12):
             temp_melody_data[i] = -1
             for n in range(i, len(melody_data), 12):
@@ -207,45 +226,77 @@ def input_runner():
 
         for i in range(0, 12):
             to_set = get_color(temp_melody_data[i])
-            timeout = 0
 
-            if time() < last_drum + 0.2:
+            if time() < last_drum + DRUM_TIMEOUT:
                 if i > 0 and temp_melody_data[i - 1] != -1:
                     to_set = [True, False, False]
-                    timeout = last_drum + 0.2
                 elif i < 11 and temp_melody_data[i + 1] != -1:
                     to_set = [True, False, False]
-                    timeout = last_drum + 0.2
 
-            set_led(i + 4, to_set, timeout)
+            update_led(i + 4, to_set)
+
+        sleep(0.01)
+
+
+def pir_input_runner():
+    global mode
+    while True:
+        if mode is not "pir":
+            sleep(0.1)
+            continue
 
         sleep(0.01)
 
 
 def light_runner():
-    global light_data
+    global light_data, mode
     while True:
-        for n in range(0, len(light_data)):
-            data = light_data[n]
-            if not data[0]:
-                continue
-
-            if time() > data[0]:
-                light_data[n] = [0, False, False, False, False]
-                # reset_led(n)
-                print(str(n) + " ended")
+        if mode is not "midi":
+            sleep(0.1)
+            continue
 
         for n in range(0, len(light_data)):
             data = light_data[n]
-            if data[4]:
-                # set_led(n, data[1], data[2], data[3])
-                print(str(n) + ": " + str(data[1]) + ", " + str(data[2]) + ", " + str(data[3]))
-                data[4] = False
+            if data[3]:
+                red = data[0]
+                green = data[1]
+                blue = data[2]
+
+                string = str()
+                if n < 10:
+                    string += "0"
+                string += str(n) + ": " + str(int(red)) + str(int(green)) + str(int(blue))
+                print(string)
+
+                set_led(n, red, green, blue)
+                data[3] = False
 
         sleep(0.01)
 
 
+def set_mode(m=0):
+    global mode
+    mode = m
+
+
+def test():
+    open_port("/dev/tty.usbmodem1d1141")
+    open_port("/dev/tty.usbserial-LI5AE6AA")
+
+    while count_leds() < 4:
+        add_led(0, 0, 0, 0)
+    add_led(1, 7, 7, 7)
+    add_led(0, 7, 7, 7)
+    add_led(0, 8, 8, 8)
+    while count_leds() < 21:
+        add_led(0, 0, 0, 0)
+
+    for n in range(0, 21):
+        reset_led(n)
+
+
 melody_in.set_callback(melody_callback)
 drum_in.set_callback(drum_callback)
+start_new_thread(midi_input_runner, ())
+start_new_thread(pir_input_runner, ())
 start_new_thread(light_runner, ())
-start_new_thread(input_runner, ())

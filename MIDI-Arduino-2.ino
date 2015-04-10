@@ -24,7 +24,7 @@ void add_LED() {
         return;
     }
 
-    leds[0]->set();
+    leds[leds.length() - 1]->set();
 
     Serial.write(leds.length() - 1);
 }
