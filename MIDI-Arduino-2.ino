@@ -140,5 +140,5 @@ void loop() {
     if (stream.available())
         reply();
 
-    delay(10);
+    delay(1);
 }
